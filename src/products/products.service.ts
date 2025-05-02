@@ -28,19 +28,30 @@ export class ProductsService {
     return this.prismaService.product.findMany();
   }
 
-  async findOne(id: number) {
-    const productFound = await this.prismaService.product.findUnique({
-      where: {
-        id: id
+  async findOne(id: number | string) {
+    try {
+      // Convertir id a número
+      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+      
+      // Validar que sea un número válido
+      if (isNaN(numericId)) {
+        throw new NotFoundException(`ID de producto inválido: ${id}`);
       }
-    });
-
-    if (!productFound) {
-      throw new NotFoundException(`Product with id ${id} not found`)
+      
+      const productFound = await this.prismaService.product.findUnique({
+        where: { id: numericId }
+      });
+    
+      if (!productFound) {
+        throw new NotFoundException(`Producto con id ${id} no encontrado`);
+      }
+    
+      return productFound;
+    } catch (error) {
+      // Manejar errores específicos
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Error al buscar el producto');
     }
-
-    return productFound;
-
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
